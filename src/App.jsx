@@ -1,17 +1,19 @@
 import React from 'react';
 import useGame from './hooks/useGame';
-import SetupScreen from './components/SetupScreen';
+import IntroScreen from './components/IntroScreen';
 import PlayScreen from './components/PlayScreen';
 
 function App() {
   const game = useGame();
 
-  if (game.phase === 'setup') {
+  if (game.phase === 'intro') {
     return (
-      <SetupScreen
-        catches={game.catches}
-        updateCatch={game.updateCatch}
-        onStart={game.startGame}
+      <IntroScreen
+        card={game.currentIntroCard}
+        introIndex={game.introIndex}
+        introTotal={game.introTotal}
+        flash={game.introFlash}
+        onSwipe={game.swipeIntro}
       />
     );
   }
