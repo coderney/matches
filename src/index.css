@@ -1,0 +1,23 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --catch-left-color: #4f8ef7;
+  --catch-right-color: #f7a24f;
+  --catch-top-color: #4fcf70;
+  --bg: #1a1a2e;
+  --penalty-red: rgba(220, 30, 30, 0.65);
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  background: var(--bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #fff;
+  overflow: hidden;
+  user-select: none;
+}
