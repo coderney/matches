@@ -6,14 +6,11 @@ import PlayScreen from './components/PlayScreen';
 function App() {
   const game = useGame();
 
-  if (game.phase === 'intro') {
+  if (game.phase === 'memorize') {
     return (
       <IntroScreen
-        card={game.currentIntroCard}
-        introIndex={game.introIndex}
-        introTotal={game.introTotal}
-        flash={game.introFlash}
-        onSwipe={game.swipeIntro}
+        catches={game.catches}
+        onStart={game.startPlay}
       />
     );
   }

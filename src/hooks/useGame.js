@@ -12,33 +12,20 @@ function shuffle(arr) {
 }
 
 function generateGame() {
-  const nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  const nums = shuffle(Array.from({ length: 20 }, (_, i) => i + 1));
   const catches = [
-    { dir: 'left',  label: '←', numbers: nums.slice(0, 3) },
-    { dir: 'right', label: '→', numbers: nums.slice(3, 6) },
-    { dir: 'top',   label: '↑', numbers: nums.slice(6, 9) },
+    { dir: 'left',  icon: '←', color: 'var(--catch-left-color)',  number: nums[0] },
+    { dir: 'right', icon: '→', color: 'var(--catch-right-color)', number: nums[1] },
+    { dir: 'top',   icon: '↑', color: 'var(--catch-top-color)',   number: nums[2] },
   ];
-  // one anchor card per catch (first number), shown in intro
-  const anchorCards = catches.map(c => ({
-    id: `anchor-${c.dir}`,
-    value: c.numbers[0],
-    target: c.dir,
-  }));
-  // full play deck: all 9 catch cards + 3 trash
-  const trashNums = nums.slice(9, 12);
-  const playDeck = shuffle([
-    ...catches.flatMap(c => c.numbers.map(n => ({ id: `${c.dir}-${n}`, value: n, target: c.dir }))),
-    ...trashNums.map(n => ({ id: `trash-${n}`, value: n, target: 'trash' })),
-  ]);
-  return { catches, anchorCards: shuffle(anchorCards), playDeck };
+  const matchCards = catches.map(c => ({ id: `match-${c.dir}`, value: c.number, target: c.dir }));
+  const trashCards = nums.slice(3, 10).map(n => ({ id: `trash-${n}`, value: n, target: 'trash' }));
+  return { catches, deck: shuffle([...matchCards, ...trashCards]) };
 }
 
 export default function useGame() {
   const [game, setGame] = useState(() => generateGame());
-  const [phase, setPhase] = useState('intro'); // 'intro' | 'play'
-  const [introIndex, setIntroIndex] = useState(0);
-  const [introFlash, setIntroFlash] = useState(false);
-
+  const [phase, setPhase] = useState('memorize'); // 'memorize' | 'play'
   const [cardIndex, setCardIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [penalty, setPenalty] = useState(0);
@@ -62,25 +49,11 @@ export default function useGame() {
     return () => clearInterval(timerRef.current);
   }, [phase, done]);
 
-  const swipeIntro = useCallback((dir) => {
-    const card = game.anchorCards[introIndex];
-    if (!card) return;
-    if (dir !== card.target) {
-      setIntroFlash(true);
-      setTimeout(() => setIntroFlash(false), 500);
-      return;
-    }
-    const next = introIndex + 1;
-    if (next >= game.anchorCards.length) {
-      setPhase('play');
-    } else {
-      setIntroIndex(next);
-    }
-  }, [game, introIndex]);
+  const startPlay = useCallback(() => setPhase('play'), []);
 
   const swipeCard = useCallback((dir) => {
     if (done || penalty > 0) return;
-    const card = game.playDeck[cardIndex];
+    const card = game.deck[cardIndex];
     if (!card) return;
     if (card.target !== dir) {
       setErrors(e => e + 1);
@@ -91,7 +64,7 @@ export default function useGame() {
       return;
     }
     const next = cardIndex + 1;
-    if (next >= game.playDeck.length) {
+    if (next >= game.deck.length) {
       setDone(true);
       clearInterval(timerRef.current);
     }
@@ -101,9 +74,7 @@ export default function useGame() {
   const restart = useCallback(() => {
     clearInterval(timerRef.current);
     setGame(generateGame());
-    setPhase('intro');
-    setIntroIndex(0);
-    setIntroFlash(false);
+    setPhase('memorize');
     setCardIndex(0);
     setElapsed(0);
     setPenalty(0);
@@ -112,18 +83,13 @@ export default function useGame() {
     setDone(false);
   }, []);
 
-  const currentIntroCard = game.anchorCards[introIndex] || null;
-  const currentCard = game.playDeck[cardIndex] || null;
-  const progress = game.playDeck.length ? cardIndex / game.playDeck.length : 0;
+  const currentCard = game.deck[cardIndex] || null;
+  const progress = game.deck.length ? cardIndex / game.deck.length : 0;
   const totalTime = elapsed + errors * PENALTY_SECONDS;
 
   return {
-    phase,
-    catches: game.catches,
-    // intro
-    currentIntroCard, introIndex, introTotal: game.anchorCards.length,
-    introFlash, swipeIntro,
-    // play
+    phase, catches: game.catches,
+    startPlay,
     currentCard, progress,
     elapsed, penalty, penaltyFlash, errors,
     done, totalTime,
