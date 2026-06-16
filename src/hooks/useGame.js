@@ -25,16 +25,18 @@ function generateGame() {
 
 export default function useGame() {
   const [game, setGame] = useState(() => generateGame());
-  const [phase, setPhase] = useState('memorize'); // 'memorize' | 'play'
+  const [phase, setPhase] = useState('memorize');
   const [cardIndex, setCardIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [penalty, setPenalty] = useState(0);
   const [penaltyFlash, setPenaltyFlash] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [errors, setErrors] = useState(0);
   const [done, setDone] = useState(false);
 
   const timerRef = useRef(null);
   const penaltyRef = useRef(0);
+  const hintTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (phase !== 'play' || done) return;
@@ -51,16 +53,28 @@ export default function useGame() {
 
   const startPlay = useCallback(() => setPhase('play'), []);
 
+  const triggerPenalty = useCallback(() => {
+    setErrors(e => e + 1);
+    setPenaltyFlash(true);
+    setTimeout(() => setPenaltyFlash(false), 600);
+    penaltyRef.current = PENALTY_SECONDS;
+    setPenalty(PENALTY_SECONDS);
+  }, []);
+
+  const triggerHint = useCallback(() => {
+    if (done || penalty > 0) return;
+    triggerPenalty();
+    setShowHint(true);
+    clearTimeout(hintTimeoutRef.current);
+    hintTimeoutRef.current = setTimeout(() => setShowHint(false), PENALTY_SECONDS * 1000);
+  }, [done, penalty, triggerPenalty]);
+
   const swipeCard = useCallback((dir) => {
     if (done || penalty > 0) return;
     const card = game.deck[cardIndex];
     if (!card) return;
     if (card.target !== dir) {
-      setErrors(e => e + 1);
-      setPenaltyFlash(true);
-      setTimeout(() => setPenaltyFlash(false), 600);
-      penaltyRef.current = PENALTY_SECONDS;
-      setPenalty(PENALTY_SECONDS);
+      triggerPenalty();
       return;
     }
     const next = cardIndex + 1;
@@ -69,10 +83,11 @@ export default function useGame() {
       clearInterval(timerRef.current);
     }
     setCardIndex(next);
-  }, [done, penalty, game, cardIndex]);
+  }, [done, penalty, game, cardIndex, triggerPenalty]);
 
   const restart = useCallback(() => {
     clearInterval(timerRef.current);
+    clearTimeout(hintTimeoutRef.current);
     setGame(generateGame());
     setPhase('memorize');
     setCardIndex(0);
@@ -81,6 +96,7 @@ export default function useGame() {
     penaltyRef.current = 0;
     setErrors(0);
     setDone(false);
+    setShowHint(false);
   }, []);
 
   const currentCard = game.deck[cardIndex] || null;
@@ -91,8 +107,8 @@ export default function useGame() {
     phase, catches: game.catches,
     startPlay,
     currentCard, progress,
-    elapsed, penalty, penaltyFlash, errors,
-    done, totalTime,
-    swipeCard, restart,
+    elapsed, penalty, penaltyFlash, showHint,
+    errors, done, totalTime,
+    swipeCard, triggerHint, restart,
   };
 }

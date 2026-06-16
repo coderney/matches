@@ -7,12 +7,7 @@ function App() {
   const game = useGame();
 
   if (game.phase === 'memorize') {
-    return (
-      <IntroScreen
-        catches={game.catches}
-        onStart={game.startPlay}
-      />
-    );
+    return <IntroScreen catches={game.catches} onStart={game.startPlay} />;
   }
 
   return (
@@ -22,11 +17,13 @@ function App() {
       elapsed={game.elapsed}
       penalty={game.penalty}
       penaltyFlash={game.penaltyFlash}
+      showHint={game.showHint}
       errors={game.errors}
       progress={game.progress}
       done={game.done}
       totalTime={game.totalTime}
       swipeCard={game.swipeCard}
+      triggerHint={game.triggerHint}
       onRestart={game.restart}
     />
   );
